@@ -64,6 +64,11 @@ def spit_fire(args)
   args.state.fireballs.each do |fireball|
     fireball.x += args.state.player.speed + 2
 
+    if fireball.x > args.grid.w
+      fireball.dead = true
+      next
+    end
+
     args.state.targets.each do |target|
       if args.geometry.intersect_rect?(target, fireball)
         target.dead = true
