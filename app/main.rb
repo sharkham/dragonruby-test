@@ -1,6 +1,7 @@
 PLAYER_W = 100
 PLAYER_H = 80
 SPEED = 12
+FPS = 60
 
 def spawn_target(args)
   size = 64
@@ -11,6 +12,10 @@ def spawn_target(args)
     h: size,
     path: 'sprites/misc/target.png',
   }
+end
+
+def fire_input?(args)
+  args.inputs.keyboard.key_down.z || args.inputs.keyboard.key_down.j || args.inputs.controller_one.key_down.a
 end
 
 def tick(args)
@@ -29,9 +34,16 @@ def tick(args)
     spawn_target(args),
   ]
   args.state.score ||= 0
+  args.state.timer ||= 30 * FPS
 
-  handle_movement(args)
-  stay_in_bounds(args)
+  args.state.timer -= 1
+
+  if args.state.timer < 0
+    game_over_tick(args)
+    return
+  end
+
+  handle_player_movement(args)
   spit_fire(args)
   remove_hit_objects(args)
 
@@ -40,18 +52,53 @@ def tick(args)
     args.state.fireballs,
     args.state.targets,
   ]
-  args.outputs.labels << {
+
+  labels = []
+  labels << {
     x: 40,
     y: args.grid.h - 40,
     text: "Score: #{args.state.score}",
     size_enum: 4,
   }
+  labels << {
+    x: args.grid.w - 40,
+    y: args.grid.h - 40,
+    text: "Time left: #{(args.state.timer / FPS).round}",
+    size_enum: 2,
+    alignment_enum: 2,
+  }
+  args.outputs.labels << labels
 end
 
-$gtk.reset
+def game_over_tick(args)
+  labels = []
+  labels << {
+    x: 40,
+    y: args.grid.h - 40,
+    text: "Game Over!",
+    size_enum: 10,
+  }
+  labels << {
+    x: 40,
+    y: args.grid.h - 90,
+    text: "Score: #{args.state.score}",
+    size_enum: 4,
+  }
+  labels << {
+    x: 40,
+    y: args.grid.h - 132,
+    text: "Fire to restart",
+    size_enum: 2,
+  }
+  args.outputs.labels << labels
+
+  if args.state.timer <- 30 && fire_input?(args)
+    $gtk.reset
+  end
+end
 
 def spit_fire(args)
-  if args.inputs.keyboard.key_down.z || args.inputs.keyboard.key_down.j || args.inputs.controller_one.key_down.a
+  if fire_input?(args)
     args.state.fireballs << {
       x: args.state.player.x + args.state.player.w,
       y: args.state.player.y + (args.state.player.h/6),
@@ -85,7 +132,7 @@ def remove_hit_objects(args)
   args.state.fireballs.reject! { |f| f.dead }
 end
 
-def handle_movement(args)
+def handle_player_movement(args)
   if args.inputs.left
     args.state.player.x -= args.state.player.speed
   elsif args.inputs.right
@@ -97,9 +144,7 @@ def handle_movement(args)
   elsif args.inputs.down
     args.state.player.y -= args.state.player.speed
   end
-end
 
-def stay_in_bounds(args)
   if args.state.player.x +  args.state.player.w > args.grid.w
     args.state.player.x = args.grid.w - args.state.player.w
   end
@@ -117,3 +162,4 @@ def stay_in_bounds(args)
   end
 end
 
+$gtk.reset
