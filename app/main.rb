@@ -3,15 +3,24 @@ PLAYER_H = 80
 SPEED = 12
 FPS = 60
 
-def spawn_target(args)
+def spawn_pokemons(args)
   size = 64
+  initial_y = rand(args.grid.h - size * 2) + size
   {
-    x: rand(args.grid.w - size * 2) + size,
-    y: rand(args.grid.h * 0.4) + args.grid.h * 0.6,
-    w: size,
-    h: size,
-    path: 'sprites/misc/target.png',
+    # x: rand(args.grid.w) + size,
+    x: args.grid.w + size,
+    # y: rand(args.grid.h - size * 2) + size,
+    # y: (rand(args.grid.h * 0.4) + args.grid.h * 0.6),
+    y: initial_y, # between things
+    w: size * 1.5,
+    h: size * 1.5,
+    path: "sprites/pokemon/spr_e_#{random_formatted_number}_1.png",
   }
+end
+
+def random_formatted_number
+  number = ((rand() * 25) + 1).round
+  number.to_s.rjust(3, '0')
 end
 
 def fire_input?(args)
@@ -19,9 +28,9 @@ def fire_input?(args)
 end
 
 def tick(args)
-  if args.state.tick_count == 1
-    args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
-  end
+  # if args.state.tick_count == 1
+  #   args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
+  # end
 
   render_background(args)
 
@@ -36,10 +45,8 @@ def tick(args)
   player_sprite_index = 0.frame_index(count: 6, hold_for: 8, repeat: true)
   args.state.player.path = "sprites/misc/dragon-#{player_sprite_index}.png"
   args.state.fireballs ||= []
-  args.state.targets ||= [
-    spawn_target(args),
-    spawn_target(args),
-    spawn_target(args),
+  args.state.pokemons ||= [
+    spawn_pokemons(args),
   ]
   args.state.score ||= 0
   args.state.timer ||= 30 * FPS
@@ -51,15 +58,21 @@ def tick(args)
     args.outputs.sounds << "sounds/game-over.wav"
   end
 
+  # args.state.timer
+  #   args.state.targets << spawn_target(args)
+  # end
+
 
   if args.state.timer < 0
     game_over_tick(args)
     return
   end
 
+  summon_pokemons(args)
   handle_player_movement(args)
   spit_fire(args)
   # move_targets(args)
+  move_pokemons(args)
   remove_hit_objects(args)
 
   args.outputs.sprites << [
@@ -67,6 +80,7 @@ def tick(args)
     args.state.player,
     args.state.fireballs,
     args.state.targets,
+    args.state.pokemons,
   ]
 
   labels = []
@@ -138,14 +152,119 @@ def game_over_tick(args)
   args.outputs.labels << labels
 end
 
-def move_targets(args)
-  args.state.targets.each do |target|
-    target.x -= args.state.player.speed / 2
+# def move_targets(args)
+#   args.state.targets.each do |target|
+#     target.x -= args.state.player.speed / 2
+#     # if (target.y == target.initial_y) # || (target.y > (target.initial_y - 200))
+#     #   target.y -= args.state.player.speed / 6
+#     #   puts "start"
+#     # elsif target.y >= (target.initial_y - 200)
+#     #   puts "#{target.y} is greater than #{target.initial_y - 200}"
+#     #   target.y -= args.state.player.speed / 6
+#     # elsif target.y <= (target.initial_y + 200)
+#     #   puts "how often"
+#     #   target.y += args.state.player.speed / 2
+#     #   puts "#{target.y} is less than #{target.initial_y + 200}"
+#     # end
 
-    if target.x < args.grid.w
-      target.dead = true
-      args.state.targets << spawn_target(args)
+#     # 185 is greater than 183
+#     # >> 185 == 183
+#     # 183 is greater than 183
+
+#     # if target.just_init == true
+#     #   target.y -= args.state.player.speed / 2
+#     #   puts "target.y: #{target.y}"
+#     #   puts "target.initial_y: #{target.initial_y}"
+#     #   puts "if #{target.y} is greater than #{target.initial_y - 200}"
+#     #   puts "if #{target.y} is less than #{target.initial_y - 200}"
+#     # end
+#     # if target.y <= (target.initial_y - 200)
+#     #   target.just_init = false
+#     #   puts "hitting it? &"
+#     #   target.y += args.state.player.speed / 6
+#     # end
+#     # if (target.y <= (target.initial_y - 200)) && (target.just_init == false)
+#     #   puts "test"
+#     #   target.y += args.state.player.speed / 6
+#     # end
+#     # if (target.y >= (target.initial_y + 200)) && (target.just_init == false)
+#     #   puts "test this"
+#     # end
+#     # if target
+#     # #   target.just_init = false
+#     # # elsif target.y <= (target.initial_y - 200).to_i
+#     #   puts "minus"
+#     #   target.y += args.state.player.speed / 6
+#     # elsif target.y >= (target.initial_y + 200).to_i
+#     #   puts "plus"
+#     #   target.y -= args.state.player.speed / 3
+#     # end
+
+#     # y = 200
+#     # upper_bound = 250 (initial.y + 50)
+#     # lower_bound = 150 (initial.y - 50)
+#     # if start
+#       # go down
+#     # if hit lower_bound
+#       # go up
+#     # if hit upper_bound
+#       # go downe
+#     # end
+
+#     # if y = 200
+#     #   y -= 20
+#     #   (y = 180, y = 160, y = 140, y = 120, y = 100, y = 80, y = 60, y = 40, y = 20)
+#     # elsif y <= (200 - 160 = 40)
+#     #   y += 20
+#     #   (y = 60, y = 80, y = 100, y = 120, y = 140, y = 160, y = 180, y = 200, y = 220, y = 240)
+#     # elsif y >= 240
+#     #   y -= 20
+#     # end
+
+#     # if target.y < (target.initial_y - 50)
+#     #   target.y += args.state.player.speed / 4
+#     #   puts "up"
+#     # elsif (target.y > target.initial_y + 50) || (target.y == target.initial_y)
+#     #   target.y -= args.state.player.speed / 4
+#     #   puts "down"
+#     # end
+
+#     # direction = "down"
+#     # interval = 30
+#     # args.state.move ||= args.state.tick_count
+#     # if args.state.move % 30 == 0
+#     #   if direction == "down"
+#     #     target.y += args.state.player.speed / 4
+#     #     direction = "up"
+#     #   elsif direction == "up"
+#     #     target.y -= args.state.player.speed / 4
+#     #     direction = "down"
+#     #   end
+#     #   # args.state.move = args.state.tick_count + interval
+#     # end
+
+#     if target.x < 0
+#       target.dead = true
+#     end
+#   end
+# end
+
+
+def move_pokemons(args)
+  args.state.pokemons.each do |pokemon|
+    pokemon.x -= args.state.player.speed / 2
+    if pokemon.x < 0
+      pokemon.dead = true
     end
+  end
+end
+
+def summon_pokemons(args)
+  interval = 30
+  args.state.next_time ||= args.state.tick_count + interval
+  if args.state.next_time.elapsed?
+    args.state.pokemons << spawn_pokemons(args)
+    args.state.next_time = args.state.tick_count + interval
   end
 end
 
@@ -169,20 +288,19 @@ def spit_fire(args)
       next
     end
 
-    args.state.targets.each do |target|
-      if args.geometry.intersect_rect?(target, fireball)
+    args.state.pokemons.each do |pokemon|
+      if args.geometry.intersect_rect?(pokemon, fireball)
         args.outputs.sounds << "sounds/target.wav"
-        target.dead = true
+        pokemon.dead = true
         fireball.dead = true
         args.state.score += 1
-        args.state.targets << spawn_target(args)
       end
     end
   end
 end
 
 def remove_hit_objects(args)
-  args.state.targets.reject! { |t| t.dead}
+  args.state.pokemons.reject! { |p| p.dead}
   args.state.fireballs.reject! { |f| f.dead }
 end
 
@@ -193,12 +311,6 @@ def handle_player_movement(args)
     args.state.player.x += args.state.player.speed
   end
 
-  # if args.inputs.up
-  #   args.state.player.y += args.state.player.speed
-  # elsif args.inputs.down
-  #   args.state.player.y -= args.state.player.speed
-  # end
-
   if args.state.player.x +  args.state.player.w > args.grid.w
     args.state.player.x = args.grid.w - args.state.player.w
   end
@@ -206,14 +318,6 @@ def handle_player_movement(args)
   if args.state.player.x < 0
     args.state.player.x = 0
   end
-
-  # if args.state.player.y + args.state.player.h > args.grid.h
-  #   args.state.player.y = args.grid.h - args.state.player.h
-  # end
-
-  # if args.state.player.y < 0
-  #   args.state.player.y = 0
-  # end
 end
 
 def render_background(args)
