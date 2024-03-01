@@ -19,6 +19,12 @@ def fire_input?(args)
 end
 
 def tick(args)
+  if args.state.tick_count == 1
+    args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
+  end
+
+  render_background(args)
+
   args.state.player ||= {
     x: 120,
     y: 280,
@@ -38,6 +44,12 @@ def tick(args)
 
   args.state.timer -= 1
 
+  if args.state.timer == 0
+    args.audio[:music].paused = true
+    args.outputs.sounds << "sounds/game-over.wav"
+  end
+
+
   if args.state.timer < 0
     game_over_tick(args)
     return
@@ -48,6 +60,7 @@ def tick(args)
   remove_hit_objects(args)
 
   args.outputs.sprites << [
+    args.state.background,
     args.state.player,
     args.state.fireballs,
     args.state.targets,
@@ -124,6 +137,7 @@ end
 
 def spit_fire(args)
   if fire_input?(args)
+    args.outputs.sounds << "sounds/fireball.wav"
     args.state.fireballs << {
       x: args.state.player.x + args.state.player.w,
       y: args.state.player.y + (args.state.player.h/6),
@@ -143,6 +157,7 @@ def spit_fire(args)
 
     args.state.targets.each do |target|
       if args.geometry.intersect_rect?(target, fireball)
+        args.outputs.sounds << "sounds/target.wav"
         target.dead = true
         fireball.dead = true
         args.state.score += 1
@@ -185,6 +200,30 @@ def handle_player_movement(args)
   if args.state.player.y < 0
     args.state.player.y = 0
   end
+end
+
+def render_background(args)
+  args.outputs.sprites << {
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720,
+    path: 'sprites/background/background_plains-Sheet1.png'
+  }
+  scroll_point_at = args.state.tick_count
+  scroll_point_at ||= 0
+
+  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet2.png', 0.25)
+  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet3.png', 0.5)
+  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet4.png', 1)
+  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet5.png', 1.5)
+end
+
+def scrolling_background(at, path, rate, y = 0)
+  [
+    { x: 0 - at.*(rate) % 1440, y: y, w: 1440, h: 720, path: path },
+    { x: 1440 - at.*(rate) % 1440, y: y, w: 1440, h: 720, path: path }
+  ]
 end
 
 $gtk.reset
