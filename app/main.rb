@@ -14,14 +14,14 @@ def spawn_pokemons(args)
     y: initial_y, # between things
     w: size * 1.5,
     h: size * 1.5,
-    path: "sprites/pokemon/spr_e_#{random_formatted_number}_1.png",
+    path: "sprites/pokemon/flying/spr_e_#{random_formatted_number}_1.png",
     y_line: rand(args.grid.h - size * 2) + size,
     speed: (rand() * 100) + 90,
   }
 end
 
 def random_formatted_number
-  number = ((rand() * 25) + 1).round
+  number = ((rand() * 72) + 1).round
   number.to_s.rjust(3, '0')
 end
 
@@ -29,7 +29,62 @@ def fire_input?(args)
   args.inputs.keyboard.key_down.z || args.inputs.keyboard.key_down.j || args.inputs.controller_one.key_down.a
 end
 
-def tick(args)
+def tick args
+  # if args.state.tick_count == 1
+  #   args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
+  # end
+
+  args.state.scene ||= "title"
+
+  send("#{args.state.scene}_tick", args)
+end
+
+def title_tick(args)
+  if fire_input?(args)
+    args.outputs.sounds << 'sounds/game-over.wav'
+    args.state.scene = "gameplay"
+    return
+  end
+
+  render_background(args)
+
+  labels = []
+  labels << {
+    x: args.grid.center_x,
+    y: args.grid.h - 100,
+    text: "Safari Zone",
+    size_enum: 20,
+    alignment_enum: 1,
+  }
+  labels << {
+    x: args.grid.center_x,
+    y: args.grid.h - 175,
+    text: "Catch the Pokémon!",
+    alignment_enum: 1,
+  }
+  labels << {
+    x: args.grid.center_x,
+    y: args.grid.h - 230,
+    text: "By Sam",
+    alignment_enum: 1,
+  }
+  labels << {
+    x: args.grid.center_x,
+    y: args.grid.h - 280,
+    text: "Arrow or WASD to move | Z or J (or A on gamepad) to throw",
+    alignment_enum: 1,
+  }
+  labels << {
+    x: args.grid.center_x,
+    y: 175,
+    text: "Throw to start",
+    size_enum: 5,
+    alignment_enum: 1,
+  }
+  args.outputs.labels << labels
+end
+
+def gameplay_tick(args)
   # if args.state.tick_count == 1
   #   args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
   # end
@@ -38,7 +93,7 @@ def tick(args)
 
   args.state.player ||= {
     x: (args.grid.w / 2) - PLAYER_W,
-    y: 40,
+    y: 0,
     w: PLAYER_W,
     h: PLAYER_H,
     speed: SPEED,
@@ -107,6 +162,8 @@ HIGH_SCORE_FILE = "high-score.txt"
 def game_over_tick(args)
   args.state.high_score ||= args.gtk.read_file(HIGH_SCORE_FILE).to_i
 
+  args.state.timer -= 1
+
   if !args.state.saved_high_score.to_i && args.state.score > args.state.high_score.to_i
     args.gtk.write_file(HIGH_SCORE_FILE, args.state.score.to_s)
     args.state.saved_high_score = true
@@ -155,104 +212,6 @@ def game_over_tick(args)
   args.outputs.labels << labels
 end
 
-# def move_targets(args)
-#   args.state.targets.each do |target|
-#     target.x -= args.state.player.speed / 2
-#     # if (target.y == target.initial_y) # || (target.y > (target.initial_y - 200))
-#     #   target.y -= args.state.player.speed / 6
-#     #   puts "start"
-#     # elsif target.y >= (target.initial_y - 200)
-#     #   puts "#{target.y} is greater than #{target.initial_y - 200}"
-#     #   target.y -= args.state.player.speed / 6
-#     # elsif target.y <= (target.initial_y + 200)
-#     #   puts "how often"
-#     #   target.y += args.state.player.speed / 2
-#     #   puts "#{target.y} is less than #{target.initial_y + 200}"
-#     # end
-
-#     # 185 is greater than 183
-#     # >> 185 == 183
-#     # 183 is greater than 183
-
-#     # if target.just_init == true
-#     #   target.y -= args.state.player.speed / 2
-#     #   puts "target.y: #{target.y}"
-#     #   puts "target.initial_y: #{target.initial_y}"
-#     #   puts "if #{target.y} is greater than #{target.initial_y - 200}"
-#     #   puts "if #{target.y} is less than #{target.initial_y - 200}"
-#     # end
-#     # if target.y <= (target.initial_y - 200)
-#     #   target.just_init = false
-#     #   puts "hitting it? &"
-#     #   target.y += args.state.player.speed / 6
-#     # end
-#     # if (target.y <= (target.initial_y - 200)) && (target.just_init == false)
-#     #   puts "test"
-#     #   target.y += args.state.player.speed / 6
-#     # end
-#     # if (target.y >= (target.initial_y + 200)) && (target.just_init == false)
-#     #   puts "test this"
-#     # end
-#     # if target
-#     # #   target.just_init = false
-#     # # elsif target.y <= (target.initial_y - 200).to_i
-#     #   puts "minus"
-#     #   target.y += args.state.player.speed / 6
-#     # elsif target.y >= (target.initial_y + 200).to_i
-#     #   puts "plus"
-#     #   target.y -= args.state.player.speed / 3
-#     # end
-
-#     # y = 200
-#     # upper_bound = 250 (initial.y + 50)
-#     # lower_bound = 150 (initial.y - 50)
-#     # if start
-#       # go down
-#     # if hit lower_bound
-#       # go up
-#     # if hit upper_bound
-#       # go downe
-#     # end
-
-#     # if y = 200
-#     #   y -= 20
-#     #   (y = 180, y = 160, y = 140, y = 120, y = 100, y = 80, y = 60, y = 40, y = 20)
-#     # elsif y <= (200 - 160 = 40)
-#     #   y += 20
-#     #   (y = 60, y = 80, y = 100, y = 120, y = 140, y = 160, y = 180, y = 200, y = 220, y = 240)
-#     # elsif y >= 240
-#     #   y -= 20
-#     # end
-
-#     # if target.y < (target.initial_y - 50)
-#     #   target.y += args.state.player.speed / 4
-#     #   puts "up"
-#     # elsif (target.y > target.initial_y + 50) || (target.y == target.initial_y)
-#     #   target.y -= args.state.player.speed / 4
-#     #   puts "down"
-#     # end
-
-#     # direction = "down"
-#     # interval = 30
-#     # args.state.move ||= args.state.tick_count
-#     # if args.state.move % 30 == 0
-#     #   if direction == "down"
-#     #     target.y += args.state.player.speed / 4
-#     #     direction = "up"
-#     #   elsif direction == "up"
-#     #     target.y -= args.state.player.speed / 4
-#     #     direction = "down"
-#     #   end
-#     #   # args.state.move = args.state.tick_count + interval
-#     # end
-
-#     if target.x < 0
-#       target.dead = true
-#     end
-#   end
-# end
-
-
 def move_pokemons(args)
   args.state.pokemons.each do |pokemon|
     pokemon.x -= args.state.player.speed / 2
@@ -289,8 +248,9 @@ def spit_fire(args)
 
   args.state.fireballs.each do |fireball|
     fireball.y += args.state.player.speed + 2
+    fireball.x += args.state.player.speed / 1.25
 
-    if fireball.y > args.grid.h
+    if (fireball.y > args.grid.h) || (fireball.x > args.grid.w)
       fireball.dead = true
       next
     end
@@ -333,13 +293,13 @@ def render_background(args)
     y: 0,
     w: 1280,
     h: 720,
-    path: 'sprites/background/background_plains-Sheet1.png'
+    path: 'sprites/background/background_valley-sheet1.png'
   }
   scroll_point_at = args.state.tick_count
   scroll_point_at ||= 0
 
   args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet2.png', 0.25)
-  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet3.png', 0.5)
+  args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_valley-sheet3.png', 0.5)
   args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet4.png', 1)
   args.outputs.sprites << scrolling_background(scroll_point_at, 'sprites/background/background_plains-sheet5.png', 1.5)
 end
