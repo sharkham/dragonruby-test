@@ -6,8 +6,8 @@ FPS = 60
 def spawn_target(args)
   size = 64
   {
-    x: rand(args.grid.w * 0.4) + args.grid.w * 0.6,
-    y: rand(args.grid.h - size * 2) + size,
+    x: rand(args.grid.w - size * 2) + size,
+    y: rand(args.grid.h * 0.4) + args.grid.h * 0.6,
     w: size,
     h: size,
     path: 'sprites/misc/target.png',
@@ -26,8 +26,8 @@ def tick(args)
   render_background(args)
 
   args.state.player ||= {
-    x: 120,
-    y: 280,
+    x: (args.grid.w / 2) - PLAYER_W,
+    y: 40,
     w: PLAYER_W,
     h: PLAYER_H,
     speed: SPEED,
@@ -59,6 +59,7 @@ def tick(args)
 
   handle_player_movement(args)
   spit_fire(args)
+  # move_targets(args)
   remove_hit_objects(args)
 
   args.outputs.sprites << [
@@ -137,6 +138,17 @@ def game_over_tick(args)
   args.outputs.labels << labels
 end
 
+def move_targets(args)
+  args.state.targets.each do |target|
+    target.x -= args.state.player.speed / 2
+
+    if target.x < args.grid.w
+      target.dead = true
+      args.state.targets << spawn_target(args)
+    end
+  end
+end
+
 def spit_fire(args)
   if fire_input?(args)
     args.outputs.sounds << "sounds/fireball.wav"
@@ -150,9 +162,9 @@ def spit_fire(args)
   end
 
   args.state.fireballs.each do |fireball|
-    fireball.x += args.state.player.speed + 2
+    fireball.y += args.state.player.speed + 2
 
-    if fireball.x > args.grid.w
+    if fireball.y > args.grid.h
       fireball.dead = true
       next
     end
@@ -181,11 +193,11 @@ def handle_player_movement(args)
     args.state.player.x += args.state.player.speed
   end
 
-  if args.inputs.up
-    args.state.player.y += args.state.player.speed
-  elsif args.inputs.down
-    args.state.player.y -= args.state.player.speed
-  end
+  # if args.inputs.up
+  #   args.state.player.y += args.state.player.speed
+  # elsif args.inputs.down
+  #   args.state.player.y -= args.state.player.speed
+  # end
 
   if args.state.player.x +  args.state.player.w > args.grid.w
     args.state.player.x = args.grid.w - args.state.player.w
@@ -195,13 +207,13 @@ def handle_player_movement(args)
     args.state.player.x = 0
   end
 
-  if args.state.player.y + args.state.player.h > args.grid.h
-    args.state.player.y = args.grid.h - args.state.player.h
-  end
+  # if args.state.player.y + args.state.player.h > args.grid.h
+  #   args.state.player.y = args.grid.h - args.state.player.h
+  # end
 
-  if args.state.player.y < 0
-    args.state.player.y = 0
-  end
+  # if args.state.player.y < 0
+  #   args.state.player.y = 0
+  # end
 end
 
 def render_background(args)
