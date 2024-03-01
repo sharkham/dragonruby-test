@@ -1,5 +1,5 @@
-PLAYER_W = 100
-PLAYER_H = 80
+PLAYER_W = 200
+PLAYER_H = 160
 SPEED = 12
 FPS = 60
 
@@ -44,8 +44,9 @@ def tick(args)
     speed: SPEED,
   }
 
-  player_sprite_index = 0.frame_index(count: 6, hold_for: 8, repeat: true)
-  args.state.player.path = "sprites/misc/dragon-#{player_sprite_index}.png"
+  # player_sprite_index = 0.frame_index(count: 6, hold_for: 8, repeat: true)
+  # args.state.player.path = "sprites/misc/dragon-#{player_sprite_index}.png"
+  args.state.player.path = "sprites/pokemon/may4.png"
   args.state.fireballs ||= []
   args.state.pokemons ||= [
     spawn_pokemons(args),
@@ -79,10 +80,10 @@ def tick(args)
 
   args.outputs.sprites << [
     args.state.background,
-    args.state.player,
     args.state.fireballs,
     args.state.targets,
     args.state.pokemons,
+    args.state.player,
   ]
 
   labels = []
