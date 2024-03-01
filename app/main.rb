@@ -15,6 +15,8 @@ def spawn_pokemons(args)
     w: size * 1.5,
     h: size * 1.5,
     path: "sprites/pokemon/spr_e_#{random_formatted_number}_1.png",
+    y_line: rand(args.grid.h - size * 2) + size,
+    speed: (rand() * 100) + 90,
   }
 end
 
@@ -253,6 +255,10 @@ end
 def move_pokemons(args)
   args.state.pokemons.each do |pokemon|
     pokemon.x -= args.state.player.speed / 2
+    phase = (args.tick_count / pokemon.speed) * Math::PI * 2
+    y_off = Math.sin(phase) * 70
+
+    pokemon.y = pokemon.y_line + y_off
     if pokemon.x < 0
       pokemon.dead = true
     end
@@ -270,13 +276,13 @@ end
 
 def spit_fire(args)
   if fire_input?(args)
-    args.outputs.sounds << "sounds/fireball.wav"
+    args.outputs.sounds << "sounds/throw.wav"
     args.state.fireballs << {
       x: args.state.player.x + args.state.player.w,
       y: args.state.player.y + (args.state.player.h/6),
       w: 32,
       h: 32,
-      path: 'sprites/misc/fireball.png',
+      path: 'sprites/pokemon/i_old_poke-ball.png',
     }
   end
 
@@ -290,7 +296,7 @@ def spit_fire(args)
 
     args.state.pokemons.each do |pokemon|
       if args.geometry.intersect_rect?(pokemon, fireball)
-        args.outputs.sounds << "sounds/target.wav"
+        args.outputs.sounds << "sounds/catch.wav"
         pokemon.dead = true
         fireball.dead = true
         args.state.score += 1
