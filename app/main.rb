@@ -1,38 +1,36 @@
 PLAYER_W = 200
 PLAYER_H = 160
-SPEED = 12
+SPEED = 10
 FPS = 60
 
 def spawn_pokemons(args)
   size = 64
   initial_y = rand(args.grid.h - size * 2) + size
   {
-    # x: rand(args.grid.w) + size,
     x: args.grid.w + size,
-    # y: rand(args.grid.h - size * 2) + size,
-    # y: (rand(args.grid.h * 0.4) + args.grid.h * 0.6),
-    y: initial_y, # between things
+    y: initial_y,
     w: size * 1.5,
     h: size * 1.5,
     path: "sprites/pokemon/flying/spr_e_#{random_formatted_number}_1.png",
     y_line: rand(args.grid.h - size * 2) + size,
-    speed: (rand() * 100) + 90,
+    wiggle_speed: (rand() * 100) + 90,
+    x_speed: (SPEED / 1.5 + (rand() * 6) - 2).round,
   }
 end
 
 def random_formatted_number
-  number = ((rand() * 72) + 1).round
+  number = ((rand() * 69) + 1).round
   number.to_s.rjust(3, '0')
 end
 
-def fire_input?(args)
+def throw_input?(args)
   args.inputs.keyboard.key_down.z || args.inputs.keyboard.key_down.j || args.inputs.controller_one.key_down.a
 end
 
 def tick args
-  # if args.state.tick_count == 1
-  #   args.audio[:music] = { input: "sounds/flight.ogg", looping: true }
-  # end
+  if args.state.tick_count == 1
+    args.audio[:music] = { input: "sounds/main_game_theme.ogg", gain: 0.25, looping: true }
+  end
 
   args.state.scene ||= "title"
 
@@ -40,7 +38,7 @@ def tick args
 end
 
 def title_tick(args)
-  if fire_input?(args)
+  if throw_input?(args)
     args.outputs.sounds << 'sounds/game-over.wav'
     args.state.scene = "gameplay"
     return
@@ -102,12 +100,12 @@ def gameplay_tick(args)
   # player_sprite_index = 0.frame_index(count: 6, hold_for: 8, repeat: true)
   # args.state.player.path = "sprites/misc/dragon-#{player_sprite_index}.png"
   args.state.player.path = "sprites/pokemon/may4.png"
-  args.state.fireballs ||= []
+  args.state.pokeballs ||= []
   args.state.pokemons ||= [
     spawn_pokemons(args),
   ]
   args.state.score ||= 0
-  args.state.timer ||= 30 * FPS
+  args.state.timer ||= 15 * FPS
 
   args.state.timer -= 1
 
@@ -128,14 +126,14 @@ def gameplay_tick(args)
 
   summon_pokemons(args)
   handle_player_movement(args)
-  spit_fire(args)
+  throw_pokeball(args)
   # move_targets(args)
   move_pokemons(args)
   remove_hit_objects(args)
 
   args.outputs.sprites << [
     args.state.background,
-    args.state.fireballs,
+    args.state.pokeballs,
     args.state.targets,
     args.state.pokemons,
     args.state.player,
@@ -189,7 +187,7 @@ def game_over_tick(args)
     size_enum: 2,
   }
 
-  if args.state.timer <- 30 && fire_input?(args)
+  if args.state.timer < -10 && throw_input?(args)
     $gtk.reset
   end
 
@@ -214,8 +212,8 @@ end
 
 def move_pokemons(args)
   args.state.pokemons.each do |pokemon|
-    pokemon.x -= args.state.player.speed / 2
-    phase = (args.tick_count / pokemon.speed) * Math::PI * 2
+    pokemon.x -= pokemon.x_speed # args.state.player.speed +
+    phase = (args.tick_count / pokemon.wiggle_speed) * Math::PI * 2
     y_off = Math.sin(phase) * 70
 
     pokemon.y = pokemon.y_line + y_off
@@ -234,24 +232,26 @@ def summon_pokemons(args)
   end
 end
 
-def spit_fire(args)
-  if fire_input?(args)
+def throw_pokeball(args)
+  if throw_input?(args)
     args.outputs.sounds << "sounds/throw.wav"
-    args.state.fireballs << {
+    args.state.pokeballs << {
       x: args.state.player.x + args.state.player.w,
       y: args.state.player.y + (args.state.player.h/6),
       w: 32,
       h: 32,
       path: 'sprites/pokemon/i_old_poke-ball.png',
+      angle: args.state.tick_count * 2,
     }
   end
 
-  args.state.fireballs.each do |fireball|
-    fireball.y += args.state.player.speed + 2
+  args.state.pokeballs.each do |fireball|
+    fireball.y += args.state.player.speed - 3
     fireball.x += args.state.player.speed / 1.25
 
     if (fireball.y > args.grid.h) || (fireball.x > args.grid.w)
       fireball.dead = true
+      args.state.pokemons << spawn_pokemons(args)
       next
     end
 
@@ -268,7 +268,7 @@ end
 
 def remove_hit_objects(args)
   args.state.pokemons.reject! { |p| p.dead}
-  args.state.fireballs.reject! { |f| f.dead }
+  args.state.pokeballs.reject! { |f| f.dead }
 end
 
 def handle_player_movement(args)
